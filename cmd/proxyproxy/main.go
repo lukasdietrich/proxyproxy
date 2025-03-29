@@ -22,6 +22,9 @@ func main() {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
-	h := proxy.Handler{}
+	h := proxy.Handler{
+		RoundTripper: http.DefaultTransport,
+	}
+
 	http.ListenAndServe(addr, &h)
 }
