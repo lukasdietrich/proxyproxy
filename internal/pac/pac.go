@@ -42,7 +42,7 @@ func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
 	proxies := parseTargetWithFallback(target)
 
 	for proxy := range proxies {
-		slog.Debug("resolved upstead proxy", slog.String("uri", r.RequestURI), slog.Any("target", proxy))
+		slog.Debug("resolved upsteam proxy", slog.String("uri", r.RequestURI), slog.Any("target", proxy))
 
 		if proxy != nil && !slices.Contains(supportedUpstreamProxies, proxy.Scheme) {
 			slog.Warn("skipping unsupported upstream proxy", slog.Any("target", proxy))

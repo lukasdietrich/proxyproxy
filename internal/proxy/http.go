@@ -19,7 +19,7 @@ func (h *Handler) proxyHttp(w http.ResponseWriter, r *http.Request) error {
 
 	clearProxyHeaders(r)
 
-	res, err := h.RoundTripper.RoundTrip(r)
+	res, err := h.rt.RoundTrip(r)
 	if err != nil {
 		return err
 	}

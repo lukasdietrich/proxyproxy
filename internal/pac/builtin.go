@@ -11,25 +11,27 @@ import (
 )
 
 func declareBuiltins(vm *goja.Runtime) {
-	vm.Set("isPlainHostName", vm.ToValue(isPlainHostName))
-	vm.Set("dnsDomainIs", vm.ToValue(dnsDomainIs))
-	vm.Set("localHostOrDomainIs", vm.ToValue(localHostOrDomainIs))
-	vm.Set("isResolvable", vm.ToValue(isResolvable))
-	vm.Set("isInNet", vm.ToValue(isInNet))
+	global := vm.GlobalObject()
 
-	vm.Set("dnsResolve", vm.ToValue(dnsResolve))
-	vm.Set("convert_addr", vm.ToValue(convertAddr))
-	vm.Set("myIpAddress", vm.ToValue(myIpAddress))
-	vm.Set("dnsDomainLevels", vm.ToValue(dnsDomainLevels))
+	global.Set("isPlainHostName", isPlainHostName)
+	global.Set("dnsDomainIs", dnsDomainIs)
+	global.Set("localHostOrDomainIs", localHostOrDomainIs)
+	global.Set("isResolvable", isResolvable)
+	global.Set("isInNet", isInNet)
 
-	vm.Set("shExpMatch", vm.ToValue(shExpMatch))
+	global.Set("dnsResolve", dnsResolve)
+	global.Set("convert_addr", convertAddr)
+	global.Set("myIpAddress", myIpAddress)
+	global.Set("dnsDomainLevels", dnsDomainLevels)
+
+	global.Set("shExpMatch", shExpMatch)
 
 	// TODO implement time based conditions
-	// vm.Set("weekdayRange", vm.ToValue(weekdayRange))
-	// vm.Set("dateRange", vm.ToValue(dateRange))
-	// vm.Set("timeRange", vm.ToValue(timeRange))
+	// global.Set("weekdayRange", weekdayRange)
+	// global.Set("dateRange", dateRange)
+	// global.Set("timeRange", timeRange)
 
-	vm.Set("alert", vm.ToValue(alert))
+	global.Set("alert", alert)
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#isplainhostname

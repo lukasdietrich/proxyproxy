@@ -12,12 +12,12 @@ var (
 )
 
 type Handler struct {
-	RoundTripper http.RoundTripper
+	rt *http.Transport
 }
 
 func New(upstream *pac.Config) *Handler {
 	return &Handler{
-		RoundTripper: &http.Transport{
+		rt: &http.Transport{
 			Proxy: upstream.Resolve,
 		},
 	}
