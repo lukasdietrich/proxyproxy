@@ -3,6 +3,8 @@ package proxy
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/lukasdietrich/proxyproxy/internal/pac"
 )
 
 var (
@@ -11,6 +13,14 @@ var (
 
 type Handler struct {
 	RoundTripper http.RoundTripper
+}
+
+func New(upstream *pac.Config) *Handler {
+	return &Handler{
+		RoundTripper: &http.Transport{
+			Proxy: upstream.Resolve,
+		},
+	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +32,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 	}
 }
 
