@@ -10,6 +10,7 @@ type resolveFunc func(url, host string) *string
 
 func compile(source []byte) (resolveFunc, error) {
 	vm := goja.New()
+	declareBuiltins(vm)
 
 	if _, err := vm.RunString(string(source)); err != nil {
 		return nil, err

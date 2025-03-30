@@ -6,7 +6,12 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
+)
+
+var (
+	supportedUpstreamProxies = []string{"http", "https", "proxy"}
 )
 
 type Config struct {
@@ -32,13 +37,14 @@ func New(url string) (*Config, error) {
 }
 
 func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
-	target := c.resolve(r.RequestURI, r.URL.Hostname())
+	requestUrl := stripUrl(r.URL)
+	target := c.resolve(requestUrl.String(), requestUrl.Hostname())
 	proxies := parseTargetWithFallback(target)
 
 	for proxy := range proxies {
 		slog.Debug("resolved upstead proxy", slog.String("uri", r.RequestURI), slog.Any("target", proxy))
 
-		if proxy != nil && proxy.Scheme != "http" && proxy.Scheme != "https" {
+		if proxy != nil && !slices.Contains(supportedUpstreamProxies, proxy.Scheme) {
 			slog.Warn("skipping unsupported upstream proxy", slog.Any("target", proxy))
 			continue
 		}
@@ -47,6 +53,13 @@ func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
 	}
 
 	return nil, fmt.Errorf("could not resolve valid upstream proxy")
+}
+
+func stripUrl(u *url.URL) *url.URL {
+	return &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
+	}
 }
 
 func parseTargetWithFallback(targets *string) iter.Seq[*url.URL] {
