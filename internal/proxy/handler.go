@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/rs/xid"
+
 	"github.com/lukasdietrich/proxyproxy/internal/pac"
 )
 
@@ -24,16 +26,22 @@ func New(upstream *pac.Config) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := h.handle(w, r); err != nil {
-		slog.Warn("could not proxy request", slog.Any("err", err))
+	log := slog.With(slog.Group("request",
+		slog.Any("id", xid.New()),
+		slog.String("method", r.Method),
+		slog.Any("url", r.URL),
+	))
+
+	if err := h.handle(log, w, r); err != nil {
+		log.Warn("could not proxy request", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 	}
 }
 
-func (h *Handler) handle(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handle(log *slog.Logger, w http.ResponseWriter, r *http.Request) error {
 	if r.Method == http.MethodConnect {
-		return h.proxyHttps(w, r)
+		return h.proxyHttps(log, w, r)
 	}
 
-	return h.proxyHttp(w, r)
+	return h.proxyHttp(log, w, r)
 }

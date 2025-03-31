@@ -14,17 +14,20 @@ var (
 	}
 )
 
-func (h *Handler) proxyHttp(w http.ResponseWriter, r *http.Request) error {
-	slog.Debug("serve http", slog.String("url", r.RequestURI), slog.String("method", r.Method))
-
+func (h *Handler) proxyHttp(log *slog.Logger, w http.ResponseWriter, r *http.Request) error {
+	log.Debug("clearing proxy headers")
 	clearProxyHeaders(r)
 
+	log.Debug("forwarding request via http")
 	res, err := h.rt.RoundTrip(r)
 	if err != nil {
 		return err
 	}
 
-	return copyResponse(w, res)
+	defer res.Body.Close()
+
+	log.Debug("copying response")
+	return copyResponse(log, w, res)
 }
 
 func clearProxyHeaders(r *http.Request) {
@@ -33,15 +36,14 @@ func clearProxyHeaders(r *http.Request) {
 	}
 }
 
-func copyResponse(w http.ResponseWriter, r *http.Response) error {
+func copyResponse(log *slog.Logger, w http.ResponseWriter, r *http.Response) error {
 	clearHeader(w.Header())
 	copyHeader(w.Header(), r.Header)
+
 	w.WriteHeader(r.StatusCode)
 
-	defer r.Body.Close()
 	n, err := io.Copy(w, r.Body)
-
-	slog.Debug("copied body", slog.Int64("bytes", n))
+	log.Debug("copied body", slog.Int64("bytes", n))
 
 	return err
 }

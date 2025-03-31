@@ -7,24 +7,28 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 )
 
-func (h *Handler) proxyHttps(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) proxyHttps(log *slog.Logger, w http.ResponseWriter, r *http.Request) error {
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
 		return fmt.Errorf("could not hijack response writer")
 	}
 
+	log.Debug("hijacking response writer")
 	client, _, err := hijacker.Hijack()
 	if err != nil {
 		return err
 	}
 
 	defer client.Close()
-	return h.establishTunnel(client, r)
+	return h.establishTunnel(log, client, r)
 }
 
-func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
+func (h *Handler) establishTunnel(log *slog.Logger, client net.Conn, r *http.Request) error {
+	t0 := time.Now()
+
 	upstream, err := h.rt.Proxy(r)
 	if err != nil {
 		return err
@@ -32,18 +36,12 @@ func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
 
 	host := r.URL.Host
 	if upstream != nil {
-		slog.Debug("establishing tunnel through another proxy",
-			slog.String("host", r.URL.Host),
-			slog.Any("upstream", upstream),
-			slog.Any("client", client.RemoteAddr()),
-		)
+		log = log.With(slog.Any("upstream", upstream))
+		log.Debug("establishing tunnel through another proxy")
 
 		host = upstream.Host
 	} else {
-		slog.Debug("establishing tunnel to target directly",
-			slog.String("host", r.URL.Host),
-			slog.Any("client", client.RemoteAddr()),
-		)
+		log.Debug("establishing tunnel to target directly")
 	}
 
 	target, err := net.Dial("tcp", host)
@@ -54,6 +52,8 @@ func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
 	defer target.Close()
 
 	if upstream != nil {
+		log.Debug("forwarding original request")
+
 		// forward request to the upstream proxy
 		if err := r.Write(target); err != nil {
 			return err
@@ -71,7 +71,7 @@ func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
 	copyAndClose(client, target, &wg)
 	wg.Wait()
 
-	slog.Debug("tunnel closed", slog.Any("client", client.RemoteAddr()))
+	log.Debug("tunnel closed", slog.Duration("duration", time.Since(t0)))
 	return nil
 }
 
