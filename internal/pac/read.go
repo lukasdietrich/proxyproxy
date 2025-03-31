@@ -2,6 +2,7 @@ package pac
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +15,11 @@ func read(url string) ([]byte, error) {
 	}
 
 	defer r.Body.Close()
+
+	if r.StatusCode != 200 {
+		return nil, fmt.Errorf("could not read pac url: %s", r.Status)
+	}
+
 	return io.ReadAll(r.Body)
 }
 

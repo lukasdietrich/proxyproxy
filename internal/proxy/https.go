@@ -25,8 +25,6 @@ func (h *Handler) proxyHttps(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
-	slog.Debug("establishing tunnel to target", slog.String("host", r.URL.Host))
-
 	upstream, err := h.rt.Proxy(r)
 	if err != nil {
 		return err
@@ -34,8 +32,18 @@ func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
 
 	host := r.URL.Host
 	if upstream != nil {
-		slog.Debug("establishing tunnel through another proxy", slog.Any("upstream", upstream))
+		slog.Debug("establishing tunnel through another proxy",
+			slog.String("host", r.URL.Host),
+			slog.Any("upstream", upstream),
+			slog.Any("client", client.RemoteAddr()),
+		)
+
 		host = upstream.Host
+	} else {
+		slog.Debug("establishing tunnel to target directly",
+			slog.String("host", r.URL.Host),
+			slog.Any("client", client.RemoteAddr()),
+		)
 	}
 
 	target, err := net.Dial("tcp", host)
@@ -61,8 +69,9 @@ func (h *Handler) establishTunnel(client net.Conn, r *http.Request) error {
 	var wg sync.WaitGroup
 	copyAndClose(target, client, &wg)
 	copyAndClose(client, target, &wg)
-
 	wg.Wait()
+
+	slog.Debug("tunnel closed", slog.Any("client", client.RemoteAddr()))
 	return nil
 }
 

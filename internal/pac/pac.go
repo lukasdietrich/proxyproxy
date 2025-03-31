@@ -8,6 +8,9 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
+
+	"github.com/lukasdietrich/proxyproxy/internal/env"
 )
 
 var (
@@ -18,12 +21,27 @@ type Config struct {
 	resolve resolveFunc
 }
 
-func New(url string) (*Config, error) {
+func FromEnv() (*Config, error) {
+	url := env.String(env.KEY_PAC_URL)
+	if url == "" {
+		slog.Info("no pac url provided. defaulting direct connections")
+		return Direct(), nil
+	}
+
+	slog.Info("configuring upstream proxies using pac", slog.String("url", url))
+	return FromUrl(url)
+}
+
+func FromUrl(url string) (*Config, error) {
 	source, err := read(url)
 	if err != nil {
 		return nil, err
 	}
 
+	return FromSource(source)
+}
+
+func FromSource(source []byte) (*Config, error) {
 	resolve, err := compile(source)
 	if err != nil {
 		return nil, err
@@ -36,13 +54,27 @@ func New(url string) (*Config, error) {
 	return &config, nil
 }
 
+func Direct() *Config {
+	return &Config{
+		resolve: func(string, string) *string {
+			return nil
+		},
+	}
+}
+
 func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
+	t0 := time.Now()
+
 	requestUrl := stripUrl(r.URL)
 	target := c.resolve(requestUrl.String(), requestUrl.Hostname())
 	proxies := parseTargetWithFallback(target)
 
 	for proxy := range proxies {
-		slog.Debug("resolved upsteam proxy", slog.String("uri", r.RequestURI), slog.Any("target", proxy))
+		slog.Debug("resolved upsteam proxy",
+			slog.String("uri", r.RequestURI),
+			slog.Any("target", proxy),
+			slog.Duration("t", time.Since(t0)),
+		)
 
 		if proxy != nil && !slices.Contains(supportedUpstreamProxies, proxy.Scheme) {
 			slog.Warn("skipping unsupported upstream proxy", slog.Any("target", proxy))
