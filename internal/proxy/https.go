@@ -12,7 +12,7 @@ import (
 func (h *Handler) proxyHttps(w http.ResponseWriter, r *http.Request) error {
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
-		return Error{Status: http.StatusInternalServerError, Text: "cannot hijack response writer"}
+		return fmt.Errorf("could not hijack response writer")
 	}
 
 	client, _, err := hijacker.Hijack()
