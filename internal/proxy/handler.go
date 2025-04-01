@@ -17,6 +17,15 @@ type Handler struct {
 	rt *http.Transport
 }
 
+func FromEnv() (*Handler, error) {
+	pac, err := pac.FromEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	return New(pac), nil
+}
+
 func New(upstream *pac.Config) *Handler {
 	return &Handler{
 		rt: &http.Transport{

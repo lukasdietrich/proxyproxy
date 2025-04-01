@@ -17,6 +17,10 @@ from docker.io/library/alpine
 	label org.opencontainers.image.authors="Lukas Dietrich <lukas@lukasdietrich.com>"
 	label org.opencontainers.image.source="https://github.com/lukasdietrich/proxyproxy"
 
+	env PROXYPROXY_AUTOCONFIGURE_ENABLED="true"
+	env PROXYPROXY_AUTOCONFIGURE_ROOT="/auto-configure-root"
+
 	expose 8080/tcp
+	volume /auto-configure-root
 	
 	cmd [ "/app/proxyproxy" ]

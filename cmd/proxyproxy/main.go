@@ -2,37 +2,51 @@ package main
 
 import (
 	"log/slog"
-	"net/http"
+	"strings"
 
-	"github.com/lukasdietrich/proxyproxy/internal/env"
-	"github.com/lukasdietrich/proxyproxy/internal/pac"
+	"github.com/spf13/viper"
+
+	"github.com/lukasdietrich/proxyproxy/internal/auto"
 	"github.com/lukasdietrich/proxyproxy/internal/proxy"
+	"github.com/lukasdietrich/proxyproxy/internal/server"
 )
 
+func init() {
+	viper.SetDefault("verbose", false)
+}
+
 func main() {
+	setupConfig()
+
 	if err := run(); err != nil {
 		slog.Error("fatal", slog.Any("err", err))
 	}
 }
 
 func run() error {
-	var (
-		verbose = env.StringOrDefault(env.KEY_VERBOSE, "0") == "1"
-		addr    = env.StringOrDefault(env.KEY_ADDR, ":8080")
-	)
-
-	if verbose {
+	if viper.GetBool("verbose") {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 		slog.Debug("enabling debug logging")
 	}
 
-	upstream, err := pac.FromEnv()
+	if err := auto.ConfigureFromEnv(); err != nil {
+		return err
+	}
+
+	handler, err := proxy.FromEnv()
 	if err != nil {
 		return err
 	}
 
-	handler := proxy.New(upstream)
+	listener := server.FromEnv(handler)
 
-	slog.Info("starting http server", slog.String("addr", addr))
-	return http.ListenAndServe(addr, handler)
+	slog.Info("starting http server", slog.String("addr", listener.Addr))
+	return listener.ListenAndServe()
+}
+
+func setupConfig() {
+	viper.SetTypeByDefaultValue(true)
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvPrefix("PROXYPROXY")
 }

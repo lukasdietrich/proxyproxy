@@ -10,8 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lukasdietrich/proxyproxy/internal/env"
+	"github.com/spf13/viper"
 )
+
+func init() {
+	viper.SetDefault("pac.url", "")
+}
 
 var (
 	supportedUpstreamProxies = []string{"http", "https", "proxy"}
@@ -22,7 +26,7 @@ type Config struct {
 }
 
 func FromEnv() (*Config, error) {
-	url := env.String(env.KEY_PAC_URL)
+	url := viper.GetString("pac.url")
 	if url == "" {
 		slog.Info("no pac url provided. defaulting direct connections")
 		return Direct(), nil
