@@ -27,11 +27,15 @@ func TestLocalHostOrDomainIs(t *testing.T) {
 func TestIsResolvable(t *testing.T) {
 	assert.True(t, isResolvable("www.mozilla.org"))
 	assert.False(t, isResolvable("absolute.not.resolvable.mozilla.org"))
+
+	assert.False(t, isResolvable(""))
 }
 
 func TestIsInNet(t *testing.T) {
 	assert.True(t, isInNet("192.168.178.123", "192.168.178.10", "255.255.255.0"))
 	assert.False(t, isInNet("192.168.178.123", "192.168.179.10", "255.255.255.0"))
+
+	assert.False(t, isInNet("", "", ""))
 }
 
 func TestDnsResolve(t *testing.T) {
@@ -40,6 +44,7 @@ func TestDnsResolve(t *testing.T) {
 
 func TestConvertAddr(t *testing.T) {
 	assert.EqualValues(t, 3221226156, convertAddr("192.0.2.172"))
+	assert.EqualValues(t, 0, convertAddr(""))
 }
 
 func TestMyIpAddress(t *testing.T) {

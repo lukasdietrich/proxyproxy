@@ -70,7 +70,7 @@ func isInNet(host, pattern, mask string) bool {
 		Mask: net.IPMask(net.ParseIP(mask)),
 	}
 
-	return network.Contains(addr.IP)
+	return network.IP != nil && network.Mask != nil && network.Contains(addr.IP)
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#dnsresolve
@@ -85,8 +85,11 @@ func dnsResolve(host string) string {
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#convert_addr
 func convertAddr(ip string) uint32 {
-	addr := net.ParseIP(ip).To4()
-	return binary.BigEndian.Uint32(addr)
+	if addr := net.ParseIP(ip).To4(); addr != nil {
+		return binary.BigEndian.Uint32(addr)
+	}
+
+	return 0
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#myipaddress
