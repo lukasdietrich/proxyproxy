@@ -56,7 +56,9 @@ func (r *osRoot) Template(path string, name string) error {
 		return err
 	}
 
+	//nolint:errcheck
 	defer f.Close()
+
 	return r.templates.ExecuteTemplate(f, name, data)
 }
 
