@@ -70,7 +70,7 @@ If you mount `/auto-configure-root` known paths are configured automatically:
 | Path                                   | Description                                                              |
 |:---------------------------------------|:-------------------------------------------------------------------------|
 | /etc/apt/apt.conf.d/99-proxyproxy.conf | Set `Acquire::http::Proxy` and `Acquire::https::Proxy`                   |
-| /etc/profile.d/99-proxyproxy.conf      | Set the environment variables `http_proxy`, `https_proxy` and `no_proxy` |
+| /etc/profile.d/99-proxyproxy.sh        | Set the environment variables `http_proxy`, `https_proxy` and `no_proxy` |
 
 
 [^1]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file
