@@ -14,6 +14,7 @@ func read(url string) ([]byte, error) {
 		return nil, err
 	}
 
+	//nolint:errcheck
 	defer r.Body.Close()
 
 	if r.StatusCode != 200 {

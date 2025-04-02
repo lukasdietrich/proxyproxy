@@ -11,7 +11,7 @@ import (
 	"github.com/gobwas/glob"
 )
 
-func declareBuiltins(vm *goja.Runtime) {
+func declareBuiltins(vm *goja.Runtime) error {
 	for name, fn := range map[string]any{
 		"isPlainHostName":     isPlainHostName,
 		"dnsDomainIs":         dnsDomainIs,
@@ -25,7 +25,9 @@ func declareBuiltins(vm *goja.Runtime) {
 		"shExpMatch":          shExpMatch,
 		"alert":               alert,
 	} {
-		declareFunction(vm, name, fn)
+		if err := declareFunction(vm, name, fn); err != nil {
+			return err
+		}
 	}
 
 	// TODO implement time based conditions
@@ -33,6 +35,8 @@ func declareBuiltins(vm *goja.Runtime) {
 	//  - weekdayRange
 	//  - dateRange
 	//  - timeRange
+
+	return nil
 }
 
 func declareFunction(vm *goja.Runtime, name string, fn any) error {
@@ -43,7 +47,7 @@ func declareFunction(vm *goja.Runtime, name string, fn any) error {
 		return fmt.Errorf("provided function %s is not a function", name)
 	}
 
-	vm.GlobalObject().Set(name, func(call goja.FunctionCall) (returnValue goja.Value) {
+	return vm.GlobalObject().Set(name, func(call goja.FunctionCall) (returnValue goja.Value) {
 		var err error
 
 		defer func() {
@@ -70,8 +74,6 @@ func declareFunction(vm *goja.Runtime, name string, fn any) error {
 
 		return
 	})
-
-	return nil
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#isplainhostname

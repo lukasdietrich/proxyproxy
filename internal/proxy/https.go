@@ -22,7 +22,9 @@ func (h *Handler) proxyHttps(log *slog.Logger, w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	//nolint:errcheck
 	defer client.Close()
+
 	return h.establishTunnel(log, client, r)
 }
 
@@ -49,6 +51,7 @@ func (h *Handler) establishTunnel(log *slog.Logger, client net.Conn, r *http.Req
 		return err
 	}
 
+	//nolint:errcheck
 	defer target.Close()
 
 	if upstream != nil {
@@ -67,22 +70,30 @@ func (h *Handler) establishTunnel(log *slog.Logger, client net.Conn, r *http.Req
 	}
 
 	var wg sync.WaitGroup
-	copyAndClose(target, client, &wg)
-	copyAndClose(client, target, &wg)
+	copyAndClose(log, &wg, target, client)
+	copyAndClose(log, &wg, client, target)
 	wg.Wait()
 
 	log.Debug("tunnel closed", slog.Duration("duration", time.Since(t0)))
 	return nil
 }
 
-func copyAndClose(dst, src net.Conn, wg *sync.WaitGroup) {
+func copyAndClose(log *slog.Logger, wg *sync.WaitGroup, dst, src net.Conn) {
 	wg.Add(1)
 
 	go func() {
-		defer dst.(interface{ CloseWrite() error }).CloseWrite()
-		defer src.(interface{ CloseRead() error }).CloseRead()
+		if _, err := io.Copy(dst, src); err != nil {
+			log.Warn("error while tunneling data", slog.Any("err", err))
+		}
 
-		io.Copy(dst, src)
+		if err := src.(interface{ CloseRead() error }).CloseRead(); err != nil {
+			log.Warn("could not close source reader", slog.Any("err", err))
+		}
+
+		if err := dst.(interface{ CloseWrite() error }).CloseWrite(); err != nil {
+			log.Warn("could not close target writer", slog.Any("err", err))
+		}
+
 		wg.Done()
 	}()
 }

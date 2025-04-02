@@ -24,6 +24,7 @@ func (h *Handler) proxyHttp(log *slog.Logger, w http.ResponseWriter, r *http.Req
 		return err
 	}
 
+	//nolint:errcheck
 	defer res.Body.Close()
 
 	log.Debug("copying response")
