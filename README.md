@@ -23,9 +23,9 @@ sequenceDiagram
   participant P as proxyproxy
 
 
-  Y ->>  C: GET https://example.org/my-secret-file.txt
+  Y ->>  C: HTTP GET https://example.org/my-secret-file.txt
   activate C
-  C ->>  P: Tunnel to //example.org:443 please.
+  C ->>  P: HTTP CONNECT //example.org:443
 
   create participant F as corporate.pac
   P ->>  F: Should I use another proxy to connect?
@@ -35,9 +35,9 @@ sequenceDiagram
   deactivate F
 
   participant U as corporate proxy
-  P ->>  U: Tunnel to //example.org:443 please.
+  P ->>  U: HTTP CONNECT //example.org:443
   participant T as example.org
-  U ->>  T: Connect to example.org:443.
+  U ->>  T: TCP Connect to example.org:443.
   activate T
   note over C,T: Data is copied between all hops, but the encryption happens end-to-end between curl and example.org unless plain http is used.
   T <<-->>  C: Tunnel encrypted data
