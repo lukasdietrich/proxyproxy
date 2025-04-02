@@ -61,7 +61,11 @@ func (r *osRoot) Template(path string, name string) error {
 }
 
 func makeDataFromEnv() (any, error) {
-	addr := viper.GetString("http.addr")
+	addr := viper.GetString("autoconfigure.config.addr")
+	if addr == "" {
+		addr = viper.GetString("http.addr")
+	}
+
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
 		return nil, err

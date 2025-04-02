@@ -10,6 +10,7 @@ import (
 func init() {
 	viper.SetDefault("autoconfigure.enabled", false)
 	viper.SetDefault("autoconfigure.root", "/")
+	viper.SetDefault("autoconfigure.config.addr", "")
 }
 
 type Root interface {
