@@ -73,7 +73,11 @@ func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
 	target := c.resolve(requestUrl.String(), requestUrl.Hostname())
 	proxies := parseTargetWithFallback(target)
 
-	for proxy := range proxies {
+	for proxy, err := range proxies {
+		if err != nil {
+			return nil, err
+		}
+
 		slog.Debug("resolved upsteam proxy",
 			slog.String("uri", r.RequestURI),
 			slog.Any("target", proxy),
@@ -98,10 +102,10 @@ func stripUrl(u *url.URL) *url.URL {
 	}
 }
 
-func parseTargetWithFallback(targets *string) iter.Seq[*url.URL] {
-	return func(yield func(*url.URL) bool) {
+func parseTargetWithFallback(targets *string) iter.Seq2[*url.URL, error] {
+	return func(yield func(*url.URL, error) bool) {
 		if targets == nil {
-			yield(nil)
+			yield(nil, nil)
 			return
 		}
 
@@ -113,15 +117,27 @@ func parseTargetWithFallback(targets *string) iter.Seq[*url.URL] {
 	}
 }
 
-func parseTarget(target string) *url.URL {
-	switch fields := strings.Fields(target); strings.ToUpper(fields[0]) {
-	case "DIRECT":
-		return nil
+func parseTarget(target string) (*url.URL, error) {
+	fields := strings.Fields(target)
 
-	default:
-		return &url.URL{
+	switch len(fields) {
+	case 1:
+		if fields[0] == "DIRECT" {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("invalid target %q, expected DIRECT", fields[0])
+
+	case 2:
+		target := url.URL{
 			Scheme: strings.ToLower(fields[0]),
 			Host:   fields[1],
 		}
+
+		return &target, nil
+
+	default:
+		return nil, fmt.Errorf("invalid target %+v, expected DIRECT or \"${TYPE} ${HOST}\"", fields)
+
 	}
 }
