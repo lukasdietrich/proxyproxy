@@ -1,9 +1,13 @@
 name: Container Image
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build, Test & Lint
     branches:
       - master
+    types:
+      - completed
 
 permissions:
   packages: write
