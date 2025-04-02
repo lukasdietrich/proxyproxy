@@ -2,6 +2,7 @@ package pac
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log/slog"
 	"net"
 	"strings"
@@ -11,27 +12,66 @@ import (
 )
 
 func declareBuiltins(vm *goja.Runtime) {
-	global := vm.GlobalObject()
-
-	global.Set("isPlainHostName", isPlainHostName)
-	global.Set("dnsDomainIs", dnsDomainIs)
-	global.Set("localHostOrDomainIs", localHostOrDomainIs)
-	global.Set("isResolvable", isResolvable)
-	global.Set("isInNet", isInNet)
-
-	global.Set("dnsResolve", dnsResolve)
-	global.Set("convert_addr", convertAddr)
-	global.Set("myIpAddress", myIpAddress)
-	global.Set("dnsDomainLevels", dnsDomainLevels)
-
-	global.Set("shExpMatch", shExpMatch)
+	for name, fn := range map[string]any{
+		"isPlainHostName":     isPlainHostName,
+		"dnsDomainIs":         dnsDomainIs,
+		"localHostOrDomainIs": localHostOrDomainIs,
+		"isResolvable":        isResolvable,
+		"isInNet":             isInNet,
+		"dnsResolve":          dnsResolve,
+		"convert_addr":        convertAddr,
+		"myIpAddress":         myIpAddress,
+		"dnsDomainLevels":     dnsDomainLevels,
+		"shExpMatch":          shExpMatch,
+		"alert":               alert,
+	} {
+		declareFunction(vm, name, fn)
+	}
 
 	// TODO implement time based conditions
-	// global.Set("weekdayRange", weekdayRange)
-	// global.Set("dateRange", dateRange)
-	// global.Set("timeRange", timeRange)
+	//
+	//  - weekdayRange
+	//  - dateRange
+	//  - timeRange
+}
 
-	global.Set("alert", alert)
+func declareFunction(vm *goja.Runtime, name string, fn any) error {
+	log := slog.With(slog.String("builtin", name))
+
+	callable, ok := goja.AssertFunction(vm.ToValue(fn))
+	if !ok {
+		return fmt.Errorf("provided function %s is not a function", name)
+	}
+
+	vm.GlobalObject().Set(name, func(call goja.FunctionCall) (returnValue goja.Value) {
+		var err error
+
+		defer func() {
+			if r := recover(); r != nil {
+				returnValue = goja.Undefined()
+
+				log.Warn("panic while calling function",
+					slog.Any("call", call),
+					slog.Any("panic", r),
+				)
+			} else {
+				log.Debug("called function",
+					slog.Any("call", call),
+					slog.Any("return", returnValue),
+					slog.Any("err", err),
+				)
+			}
+		}()
+
+		returnValue, err = callable(call.This, call.Arguments...)
+		if err != nil {
+			returnValue = goja.Undefined()
+		}
+
+		return
+	})
+
+	return nil
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#isplainhostname
