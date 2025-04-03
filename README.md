@@ -29,10 +29,9 @@ sequenceDiagram
 
   create participant F as corporate.pac
   P ->>  F: Should I use another proxy to connect?
-  activate F
   note over P,F: The corporate.pac file is a JavaScript that evaluates an url to <br> either "PROXY host:port" or "DIRECT" for a direct connection.
-  F -->> P: Connect via corporate proxy.
-  deactivate F
+  destroy F
+  F ->> P: Connect via corporate proxy.
 
   participant U as corporate proxy
   P ->>  U: HTTP CONNECT //example.org:443
