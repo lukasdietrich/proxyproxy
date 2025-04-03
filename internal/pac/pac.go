@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"iter"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -66,10 +65,9 @@ func Direct() *Config {
 	}
 }
 
-func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
+func (c *Config) Resolve(requestUrl *url.URL) (*url.URL, error) {
 	t0 := time.Now()
 
-	requestUrl := stripUrl(r.URL)
 	target := c.resolve(requestUrl.String(), requestUrl.Hostname())
 	proxies := parseTargetWithFallback(target)
 
@@ -79,7 +77,7 @@ func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
 		}
 
 		slog.Debug("resolved upsteam proxy",
-			slog.String("uri", r.RequestURI),
+			slog.Any("uri", requestUrl),
 			slog.Any("target", proxy),
 			slog.Duration("t", time.Since(t0)),
 		)
@@ -93,13 +91,6 @@ func (c *Config) Resolve(r *http.Request) (*url.URL, error) {
 	}
 
 	return nil, fmt.Errorf("could not resolve valid upstream proxy")
-}
-
-func stripUrl(u *url.URL) *url.URL {
-	return &url.URL{
-		Scheme: u.Scheme,
-		Host:   u.Host,
-	}
 }
 
 func parseTargetWithFallback(targets *string) iter.Seq2[*url.URL, error] {

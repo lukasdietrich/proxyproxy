@@ -87,11 +87,11 @@ func copyAndClose(log *slog.Logger, wg *sync.WaitGroup, dst, src net.Conn) {
 		}
 
 		if err := src.(interface{ CloseRead() error }).CloseRead(); err != nil {
-			log.Warn("could not close source reader", slog.Any("err", err))
+			log.Debug("could not close source reader", slog.Any("err", err))
 		}
 
 		if err := dst.(interface{ CloseWrite() error }).CloseWrite(); err != nil {
-			log.Warn("could not close target writer", slog.Any("err", err))
+			log.Debug("could not close target writer", slog.Any("err", err))
 		}
 
 		wg.Done()

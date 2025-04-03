@@ -3,15 +3,20 @@ package proxy
 import (
 	"log/slog"
 	"net/http"
+	"net/url"
 
 	"github.com/rs/xid"
 
+	"github.com/lukasdietrich/proxyproxy/internal/cache"
 	"github.com/lukasdietrich/proxyproxy/internal/pac"
 )
 
 var (
 	_ http.Handler = &Handler{}
 )
+
+type resolveRequestProxyFunc func(*http.Request) (*url.URL, error)
+type resolveUrlProxyFunc func(*url.URL) (*url.URL, error)
 
 type Handler struct {
 	rt *http.Transport
@@ -29,8 +34,22 @@ func FromEnv() (*Handler, error) {
 func New(upstream *pac.Config) *Handler {
 	return &Handler{
 		rt: &http.Transport{
-			Proxy: upstream.Resolve,
+			Proxy: wrapResolveRequestProxyFunc(cache.Func(upstream.Resolve)),
 		},
+	}
+}
+
+func wrapResolveRequestProxyFunc(resolve resolveUrlProxyFunc) resolveRequestProxyFunc {
+	return func(r *http.Request) (*url.URL, error) {
+		strippedUrl := stripUrl(r.URL)
+		return resolve(strippedUrl)
+	}
+}
+
+func stripUrl(u *url.URL) *url.URL {
+	return &url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
 	}
 }
 
