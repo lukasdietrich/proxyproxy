@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -21,6 +22,7 @@ var (
 )
 
 type Config struct {
+	mu      sync.Mutex
 	resolve resolveFunc
 }
 
@@ -66,6 +68,11 @@ func Direct() *Config {
 }
 
 func (c *Config) Resolve(requestUrl *url.URL) (*url.URL, error) {
+	// The goja.Runtime is not goroutine-safe.
+	// See https://github.com/dop251/goja?tab=readme-ov-file#is-it-goroutine-safe
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	t0 := time.Now()
 
 	target := c.resolve(requestUrl.String(), requestUrl.Hostname())
