@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/dop251/goja v0.0.0-20250309171923-bcd7cc6bf64c
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/rs/xid v1.6.0
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
